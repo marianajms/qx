@@ -10,6 +10,7 @@ from quotex_client import QuotexClient
 from strategy import TradingStrategy
 from backtest import BacktestEngine
 from dashboard import Dashboard
+from database import TradesDatabase
 
 # Configure page
 st.set_page_config(
@@ -23,6 +24,12 @@ if 'quotex_client' not in st.session_state:
     st.session_state.quotex_client = None
 if 'connected' not in st.session_state:
     st.session_state.connected = False
+if 'database' not in st.session_state:
+    db = TradesDatabase()
+    if db.connect():
+        st.session_state.database = db
+    else:
+        st.session_state.database = None
 if 'trading_active' not in st.session_state:
     st.session_state.trading_active = False
 if 'trades_history' not in st.session_state:
@@ -37,6 +44,8 @@ if 'trade_amount' not in st.session_state:
     st.session_state.trade_amount = 10.0
 if 'expiry_time' not in st.session_state:
     st.session_state.expiry_time = 60
+if 'pending_trades' not in st.session_state:
+    st.session_state.pending_trades = []
 
 def main():
     st.title("🚀 Quotex Trading Bot - Estratégia 5 Velas Iguais")
@@ -264,16 +273,25 @@ def main():
                                         if result:
                                             st.success(f"💰 Operação executada: {direction.upper()} - ${st.session_state.trade_amount}")
                                             
-                                            # Update history
+                                            # Save to database
                                             trade_record = {
                                                 'timestamp': datetime.now(),
                                                 'asset': st.session_state.selected_asset,
                                                 'direction': direction.upper(),
                                                 'amount': st.session_state.trade_amount,
+                                                'expiry_time': st.session_state.expiry_time,
                                                 'pattern': pattern_type,
                                                 'backtest_rate': backtest_result['win_rate'],
                                                 'status': 'executed'
                                             }
+                                            
+                                            # Insert into database
+                                            if st.session_state.database:
+                                                trade_id = st.session_state.database.insert_trade(trade_record)
+                                                if trade_id:
+                                                    trade_record['id'] = trade_id
+                                            
+                                            # Also keep in session state for current session
                                             st.session_state.trades_history.append(trade_record)
                                         else:
                                             st.error("❌ Falha ao executar operação")
@@ -300,10 +318,34 @@ def main():
             
             st.dataframe(stats_df, hide_index=True, use_container_width=True)
             
-            # Recent trades
-            if st.session_state.trades_history:
-                st.subheader("🕐 Operações Recentes")
-                recent_trades = st.session_state.trades_history[-5:]  # Last 5 trades
+            # Recent trades from database
+            if st.session_state.database:
+                st.subheader("🕐 Histórico de Operações")
+                db_trades = st.session_state.database.get_all_trades(limit=10)
+                
+                if db_trades:
+                    trades_df = pd.DataFrame(db_trades)
+                    trades_df['timestamp'] = pd.to_datetime(trades_df['timestamp']).dt.strftime('%d/%m %H:%M')
+                    
+                    display_cols = ['timestamp', 'asset', 'direction', 'amount', 'pattern']
+                    if 'result' in trades_df.columns:
+                        display_cols.append('result')
+                    
+                    st.dataframe(
+                        trades_df[display_cols].head(10),
+                        hide_index=True,
+                        use_container_width=True
+                    )
+                    
+                    # Show database statistics
+                    db_stats = st.session_state.database.get_trade_statistics()
+                    if db_stats:
+                        st.write(f"**Total de Trades no BD:** {db_stats.get('total_trades', 0)} | **Taxa de Acerto:** {db_stats.get('win_rate', 0):.1f}%")
+                else:
+                    st.info("Nenhuma operação registrada no banco de dados ainda.")
+            elif st.session_state.trades_history:
+                st.subheader("🕐 Operações da Sessão")
+                recent_trades = st.session_state.trades_history[-5:]
                 
                 trades_df = pd.DataFrame(recent_trades)
                 if not trades_df.empty:
