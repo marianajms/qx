@@ -45,6 +45,8 @@ def main():
     with st.sidebar:
         st.header("🔐 Conexão Quotex")
         
+        st.info("ℹ️ **Integração Real com Quotex:** Esta aplicação agora usa a biblioteca quotexpy para conectar-se à sua conta Quotex real. Insira suas credenciais autênticas.")
+        
         if not st.session_state.connected:
             email = st.text_input("Email", placeholder="seu-email@exemplo.com")
             password = st.text_input("Senha", type="password")
