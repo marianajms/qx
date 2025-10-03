@@ -52,7 +52,7 @@ class BacktestEngine:
                 current_candles[-5:]
             )
             
-            if pattern_detected and confidence >= 60.0:
+            if pattern_detected and pattern_type and confidence >= 60.0:
                 # Simulate trade execution
                 trade_amount = 50.0  # Fixed amount for backtest
                 if balance >= trade_amount:
@@ -159,7 +159,7 @@ class BacktestEngine:
                 current_candles[-5:]
             )
             
-            if pattern_detected and confidence >= 60.0:
+            if pattern_detected and pattern_type and confidence >= 60.0:
                 next_candle = candles[i + 1]
                 current_candle = candles[i]
                 
@@ -180,7 +180,8 @@ class BacktestEngine:
         for pattern in pattern_stats:
             total = pattern_stats[pattern]['total']
             wins = pattern_stats[pattern]['wins']
-            pattern_stats[pattern]['win_rate'] = (wins / total * 100) if total > 0 else 0.0
+            win_rate_value = (wins / total * 100) if total > 0 else 0.0
+            pattern_stats[pattern]['win_rate'] = float(round(win_rate_value, 2))
         
         return pattern_stats
     
@@ -231,7 +232,7 @@ class BacktestEngine:
                 current_candles[-5:]
             )
             
-            if pattern_detected and confidence >= confidence_threshold:
+            if pattern_detected and pattern_type and confidence >= confidence_threshold:
                 trades_count += 1
                 
                 next_candle = candles[i + 1]
@@ -252,7 +253,7 @@ class BacktestEngine:
         return {
             'total_trades': trades_count,
             'winning_trades': wins,
-            'win_rate': win_rate
+            'win_rate': float(round(win_rate, 2))
         }
     
     def generate_backtest_report(self, results: Dict) -> str:

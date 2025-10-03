@@ -145,12 +145,12 @@ class Dashboard:
         
         st.plotly_chart(fig, use_container_width=True)
     
-    def render_pattern_analysis(self, pattern_detected: bool, pattern_type: str = None, 
+    def render_pattern_analysis(self, pattern_detected: bool, pattern_type: str | None = None, 
                               confidence: float = 0.0):
         """Render pattern analysis section"""
         st.subheader("🔍 Análise de Padrão")
         
-        if pattern_detected:
+        if pattern_detected and pattern_type:
             col1, col2 = st.columns(2)
             
             with col1:
@@ -326,9 +326,9 @@ class Dashboard:
         - 📈 Mantenha registro de todas as operações
         """)
     
-    def render_system_alerts(self, alerts: list = None):
+    def render_system_alerts(self, alerts: list | None = None):
         """Render system alerts and notifications"""
-        if not alerts:
+        if alerts is None:
             alerts = []
         
         if alerts:

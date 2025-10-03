@@ -33,6 +33,10 @@ if 'selected_asset' not in st.session_state:
     st.session_state.selected_asset = "EURUSD_otc"
 if 'strategy_stats' not in st.session_state:
     st.session_state.strategy_stats = {'total': 0, 'wins': 0, 'losses': 0}
+if 'trade_amount' not in st.session_state:
+    st.session_state.trade_amount = 10.0
+if 'expiry_time' not in st.session_state:
+    st.session_state.expiry_time = 60
 
 def main():
     st.title("🚀 Quotex Trading Bot - Estratégia 5 Velas Iguais")
@@ -100,18 +104,18 @@ def main():
                 index=otc_assets.index(st.session_state.selected_asset)
             )
             
-            trade_amount = st.number_input(
+            st.session_state.trade_amount = st.number_input(
                 "💵 Valor da Operação",
                 min_value=1.0,
                 max_value=10000.0,
-                value=10.0,
+                value=st.session_state.trade_amount,
                 step=1.0
             )
             
-            expiry_time = st.selectbox(
+            st.session_state.expiry_time = st.selectbox(
                 "⏰ Tempo de Expiração",
                 [60, 120, 180, 300, 600],
-                index=0,
+                index=[60, 120, 180, 300, 600].index(st.session_state.expiry_time),
                 format_func=lambda x: f"{x//60}m {x%60}s" if x >= 60 else f"{x}s"
             )
             
@@ -249,21 +253,21 @@ def main():
                                         result = asyncio.run(
                                             st.session_state.quotex_client.buy(
                                                 st.session_state.selected_asset,
-                                                trade_amount,
+                                                st.session_state.trade_amount,
                                                 direction,
-                                                expiry_time
+                                                st.session_state.expiry_time
                                             )
                                         )
                                         
                                         if result:
-                                            st.success(f"💰 Operação executada: {direction.upper()} - ${trade_amount}")
+                                            st.success(f"💰 Operação executada: {direction.upper()} - ${st.session_state.trade_amount}")
                                             
                                             # Update history
                                             trade_record = {
                                                 'timestamp': datetime.now(),
                                                 'asset': st.session_state.selected_asset,
                                                 'direction': direction.upper(),
-                                                'amount': trade_amount,
+                                                'amount': st.session_state.trade_amount,
                                                 'pattern': pattern_type,
                                                 'backtest_rate': backtest_result['win_rate'],
                                                 'status': 'executed'

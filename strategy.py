@@ -161,12 +161,15 @@ class TradingStrategy:
         df['low_close'] = abs(df['low'] - df['close'].shift(1))
         df['true_range'] = df[['high_low', 'high_close', 'low_close']].max(axis=1)
         
-        atr = df['true_range'].rolling(14).mean().iloc[-1]
+        atr_series = df['true_range'].rolling(14).mean()
+        atr = atr_series.iloc[-1] if hasattr(atr_series, 'iloc') else float(atr_series.values[-1])
         
         # Classify volatility
-        if atr > df['close'].iloc[-1] * 0.002:  # > 0.2%
+        close_series = df['close']
+        last_close = close_series.iloc[-1] if hasattr(close_series, 'iloc') else float(close_series.values[-1])
+        if atr > last_close * 0.002:  # > 0.2%
             volatility = "high"
-        elif atr > df['close'].iloc[-1] * 0.001:  # > 0.1%
+        elif atr > last_close * 0.001:  # > 0.1%
             volatility = "medium"
         else:
             volatility = "low"
@@ -246,7 +249,7 @@ if __name__ == "__main__":
     print(f"Pattern type: {pattern_type}")
     print(f"Confidence: {confidence}%")
     
-    if detected:
+    if detected and pattern_type:
         direction = strategy.get_trade_direction(pattern_type)
         print(f"Trade direction: {direction}")
     
